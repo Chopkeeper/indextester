@@ -1,7 +1,9 @@
 import React, { useState, useEffect, FormEvent, useCallback } from 'react';
-import { PlusIcon, SaveIcon, PencilIcon, TrashIcon, ArrowLeftIcon, NewspaperIcon } from './Icons';
+import { PlusIcon, SaveIcon, PencilIcon, TrashIcon, ArrowLeftIcon, NewspaperIcon, LogoutIcon, SearchIcon } from './Icons';
 import { NewsArticle, getArticles, addArticle, updateArticle, deleteArticle } from '../services/db';
 import AdminIta from './AdminIta';
+import AdminUsers from './AdminUsers';
+import { useAuth } from './AuthContext';
 
 const AdminNews: React.FC = () => {
     const [articles, setArticles] = useState<NewsArticle[]>([]);
@@ -9,6 +11,7 @@ const AdminNews: React.FC = () => {
     const [content, setContent] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const fetchArticles = useCallback(async () => {
         setIsLoading(true);
@@ -66,6 +69,12 @@ const AdminNews: React.FC = () => {
         setContent('');
     }
 
+    const filteredArticles = articles.filter(
+        article =>
+            article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            article.content.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return (
         <main className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
             <aside className="lg:col-span-1">
@@ -112,32 +121,54 @@ const AdminNews: React.FC = () => {
             <section className="lg:col-span-2">
                 <div className="bg-white p-6 rounded-lg shadow-lg">
                     <h2 className="text-2xl font-bold text-brand-blue-dark mb-6 border-b pb-4">Published Articles ({articles.length})</h2>
+                    
+                    <div className="mb-6 relative">
+                        <input
+                            type="text"
+                            placeholder="Search articles by title or content..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent transition"
+                        />
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <SearchIcon className="w-5 h-5 text-gray-400" />
+                        </div>
+                    </div>
+
                     {isLoading ? (
                         <p className="text-center text-gray-500">Loading articles...</p>
                     ) : articles.length > 0 ? (
-                        <div className="space-y-4">
-                            {articles.map(article => (
-                                <div key={article.id} className="border border-gray-200 rounded-lg p-4 transition duration-300 hover:shadow-md hover:border-brand-blue">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h3 className="font-bold text-lg text-brand-blue-dark">{article.title}</h3>
-                                            <p className="text-brand-secondary my-2 text-sm">{article.content}</p>
-                                            <p className="text-xs text-gray-400">
-                                                {new Date(article.createdAt).toLocaleString()}
-                                            </p>
-                                        </div>
-                                        <div className="flex space-x-2 flex-shrink-0 ml-4">
-                                            <button onClick={() => handleEdit(article)} className="p-2 text-blue-600 bg-blue-100 rounded-full hover:bg-blue-200 transition" aria-label="Edit article">
-                                                <PencilIcon className="w-5 h-5" />
-                                            </button>
-                                            <button onClick={() => handleDelete(article.id)} className="p-2 text-red-600 bg-red-100 rounded-full hover:bg-red-200 transition" aria-label="Delete article">
-                                                <TrashIcon className="w-5 h-5" />
-                                            </button>
+                         filteredArticles.length > 0 ? (
+                            <div className="space-y-4">
+                                {filteredArticles.map(article => (
+                                    <div key={article.id} className="border border-gray-200 rounded-lg p-4 transition duration-300 hover:shadow-md hover:border-brand-blue">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h3 className="font-bold text-lg text-brand-blue-dark">{article.title}</h3>
+                                                <p className="text-brand-secondary my-2 text-sm">{article.content}</p>
+                                                <p className="text-xs text-gray-400">
+                                                    {new Date(article.createdAt).toLocaleString()}
+                                                </p>
+                                            </div>
+                                            <div className="flex space-x-2 flex-shrink-0 ml-4">
+                                                <button onClick={() => handleEdit(article)} className="p-2 text-blue-600 bg-blue-100 rounded-full hover:bg-blue-200 transition" aria-label="Edit article">
+                                                    <PencilIcon className="w-5 h-5" />
+                                                </button>
+                                                <button onClick={() => handleDelete(article.id)} className="p-2 text-red-600 bg-red-100 rounded-full hover:bg-red-200 transition" aria-label="Delete article">
+                                                    <TrashIcon className="w-5 h-5" />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-12 text-gray-500">
+                               <SearchIcon className="w-16 h-16 mx-auto text-gray-300" />
+                               <h3 className="mt-4 text-xl font-semibold">No Matching Articles</h3>
+                               <p className="mt-2 text-sm">Your search for "{searchTerm}" did not find any articles.</p>
+                           </div>
+                        )
                     ) : (
                         <div className="text-center py-12 text-gray-500">
                             <NewspaperIcon className="w-16 h-16 mx-auto text-gray-300" />
@@ -153,17 +184,27 @@ const AdminNews: React.FC = () => {
 
 
 const Admin: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'news' | 'ita'>('news');
+  const [activeTab, setActiveTab] = useState<'news' | 'ita' | 'users'>('news');
+  const { currentUser, logout } = useAuth();
 
   return (
-    <div className="bg-gray-100 min-h-screen font-sans">
+    <div className="min-h-screen font-sans">
       <div className="container mx-auto p-4 md:p-8">
         <header className="flex flex-col sm:flex-row justify-between sm:items-center mb-8">
-          <h1 className="text-4xl font-bold text-brand-blue-dark mb-4 sm:mb-0">Admin Dashboard</h1>
-          <a href="#home" className="inline-flex items-center space-x-2 bg-white text-brand-blue-dark font-semibold py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-300 self-start">
-            <ArrowLeftIcon className="w-5 h-5" />
-            <span>Back to Main Site</span>
-          </a>
+          <div>
+            <h1 className="text-4xl font-bold text-brand-blue-dark mb-2 sm:mb-0">Admin Dashboard</h1>
+            {currentUser && <p className="text-gray-500">Logged in as: <span className="font-semibold text-brand-blue-dark">{currentUser.id}</span></p>}
+          </div>
+          <div className="flex items-center space-x-4 mt-4 sm:mt-0 self-start sm:self-center">
+            <a href="#home" className="inline-flex items-center space-x-2 bg-white text-brand-blue-dark font-semibold py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-300">
+              <ArrowLeftIcon className="w-5 h-5" />
+              <span>Back to Site</span>
+            </a>
+            <button onClick={logout} className="inline-flex items-center space-x-2 bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition duration-300">
+                <LogoutIcon className="w-5 h-5"/>
+                <span>Logout</span>
+            </button>
+          </div>
         </header>
         
         <div className="mb-6 border-b border-gray-300">
@@ -188,11 +229,22 @@ const Admin: React.FC = () => {
                 >
                     ITA Management
                 </button>
+                <button
+                    onClick={() => setActiveTab('users')}
+                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg transition-colors duration-200 ${
+                        activeTab === 'users'
+                        ? 'border-brand-blue text-brand-blue'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                >
+                    User Management
+                </button>
             </nav>
         </div>
 
         {activeTab === 'news' && <AdminNews />}
         {activeTab === 'ita' && <AdminIta />}
+        {activeTab === 'users' && <AdminUsers />}
 
       </div>
     </div>

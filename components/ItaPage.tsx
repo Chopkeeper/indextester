@@ -46,14 +46,11 @@ const ItaPage: React.FC = () => {
     };
     
     const handleViewPdf = (pdfBase64: string, title: string) => {
-        const pdfWindow = window.open("");
-        if (pdfWindow) {
-             pdfWindow.document.title = title;
-             pdfWindow.document.write(
-                `<html style="height:100%; margin:0;"><body style="height:100%; margin:0;"><iframe width='100%' height='100%' src='data:application/pdf;base64,${pdfBase64}'></iframe></body></html>`
-             );
-        } else {
-            alert("Please allow pop-ups for this website to view PDF documents.");
+        const pdfUrl = `data:application/pdf;base64,${pdfBase64}`;
+        const pdfWindow = window.open(pdfUrl, '_blank');
+        
+        if (!pdfWindow) {
+            alert("ไม่สามารถเปิดไฟล์ PDF ได้ กรุณาปิดการใช้งาน Pop-up Blocker สำหรับเว็บไซต์นี้แล้วลองอีกครั้ง");
         }
     };
     

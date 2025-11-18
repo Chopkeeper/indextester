@@ -51,22 +51,32 @@ const AdminIta: React.FC = () => {
             return;
         }
 
-        let pdfBase64 = '';
-        if (pdfFile) {
-            pdfBase64 = await fileToBase64(pdfFile);
-        }
+        try {
+            let pdfBase64 = '';
+            if (pdfFile) {
+                pdfBase64 = await fileToBase64(pdfFile);
+            }
 
-        if (editingId) {
-            const currentItem = items.find(item => item.id === editingId);
-            if (!currentItem) return;
-            // If a new file is not selected, use the old one
-            await updateItaItem(editingId, parseInt(year), title, pdfBase64 || currentItem.pdfFile);
-        } else if (pdfBase64) {
-            await addItaItem(parseInt(year), title, pdfBase64);
+            if (editingId) {
+                const currentItem = items.find(item => item.id === editingId);
+                if (!currentItem) return;
+                // If a new file is not selected, use the old one
+                await updateItaItem(editingId, parseInt(year), title, pdfBase64 || currentItem.pdfFile);
+                alert('ITA document updated successfully!');
+            } else if (pdfBase64) {
+                await addItaItem(parseInt(year), title, pdfBase64);
+                alert('ITA document added successfully!');
+            } else {
+                alert('A PDF file is required to add a new document.');
+                return;
+            }
+            
+            resetForm();
+            await fetchItems();
+        } catch (error) {
+            console.error('Failed to save ITA item:', error);
+            alert('An error occurred while saving the document. Please try again.');
         }
-        
-        resetForm();
-        await fetchItems();
     };
 
     const handleEdit = (item: ItaItem) => {

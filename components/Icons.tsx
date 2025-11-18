@@ -73,7 +73,7 @@ export const BrainIcon: React.FC<IconProps> = ({ className }) => (
 
 export const BoneIcon: React.FC<IconProps> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M18.4 4.3c-1.1-1.1-2.9-1.1-4 0l-7.2 7.2c-.4.4-.4 1 0 1.4l1.4 1.4c.4.4 1 .4 1.4 0l7.2-7.2c1.1-1.1 1.1-2.8 0-4zm-5.4 1.4c.6-.6 1.5-.6 2.1 0l-6.5 6.5c-.6.6-1.5.6-2.1 0l-1.4-1.4c-.6-.6-.6-1.5 0-2.1l7.9-7.9zM5.6 19.7c1.1 1.1 2.9 1.1 4 0l7.2-7.2c.4-.4.4-1 0-1.4l-1.4-1.4c-.4-.4-1-.4-1.4 0l-7.2 7.2c-1.1 1.1-1.1 2.8 0 4z"/>
+        <path d="M18.4 4.3c-1.1-1.1-2.9-1.1-4 0l-7.2 7.2c-.4.4-.4 1 0 1.4l1.4 1.4c.4.4 1 .4 1.4 0l7.2-7.2c1.1-1.1 1.1-2.8 0-4zm-5.4 1.4c.6-.6 1.5-.6 2.1 0l-6.5 6.5c-.6.6-1.5.6-2.1 0l-1.4-1.4c-.6-.6-.6-1.5 0-2.1l7.9-7.9zM5.6 19.7c1.1 1.1 2.9 1.1 4 0l7.2-7.2c.4-.4.4-1 0-1.4l-1.4-1.4c-.4-.4-1-.4-1.4 0l-7.2 7.2c-1.1 1.1-1.1-2.8 0-4z"/>
     </svg>
 );
 
@@ -129,4 +129,22 @@ export const UploadIcon: React.FC<IconProps> = ({ className }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
     </svg>
+);
+
+export const UserCircleIcon: React.FC<IconProps> = ({ className }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+);
+
+export const LogoutIcon: React.FC<IconProps> = ({ className }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+    </svg>
+);
+
+export const SearchIcon: React.FC<IconProps> = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
 );

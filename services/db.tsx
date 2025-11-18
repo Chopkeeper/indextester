@@ -13,6 +13,12 @@ export interface ItaItem {
   createdAt: string;
 }
 
+export interface User {
+    id: string;
+    passwordHash: string;
+    createdAt: string;
+}
+
 
 // Add initSqlJs to the window object for TypeScript
 declare global {
@@ -28,13 +34,7 @@ const DB_KEY = 'klinik-sql-db';
 
 // Helper to convert Uint8Array to Base64 string for localStorage
 function toBase64(arr: Uint8Array): string {
-    // btoa throws a 'InvalidCharacterError' if the input string contains characters outside of the Latin1 range.
-    let E = '', r = new Uint8Array(arr), i = 0, C = r.length, S = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-    for (; i < C; ) {
-        let e = r[i++], n = i < C ? r[i++] : NaN, t = i < C ? r[i++] : NaN, s = e >> 2, o = (3 & e) << 4 | n >> 4, u = (15 & n) << 2 | t >> 6, a = 63 & t;
-        isNaN(n) ? u = a = 64 : isNaN(t) && (a = 64), E += S.charAt(s) + S.charAt(o) + S.charAt(u) + S.charAt(a);
-    }
-    return E;
+    return btoa(String.fromCharCode.apply(null, Array.from(arr)));
 }
 
 // Helper to convert Base64 string back to Uint8Array
@@ -46,6 +46,15 @@ function fromBase64(base64: string): Uint8Array {
         bytes[i] = binaryString.charCodeAt(i);
     }
     return bytes;
+}
+
+// SHA-256 Hashing function
+async function sha256(message: string): Promise<string> {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
 }
 
 const initializeDb = async () => {
@@ -62,16 +71,29 @@ const initializeDb = async () => {
             db = new SQL.Database(dbData);
         } else {
             db = new SQL.Database();
-            // Create tables if the DB is new
-            const createNewsTableStmt = "CREATE TABLE news (id TEXT PRIMARY KEY, title TEXT, content TEXT, createdAt TEXT);";
-            db.run(createNewsTableStmt);
         }
 
-        // Check for ITA table and create if not exists
-        const checkItaTable = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='ita';");
-        if (checkItaTable.length === 0) {
-          const createItaTableStmt = "CREATE TABLE ita (id TEXT PRIMARY KEY, year INTEGER, title TEXT, pdfFile TEXT, createdAt TEXT);";
-          db.run(createItaTableStmt);
+        // Table Creation
+        const tables = {
+            news: "CREATE TABLE IF NOT EXISTS news (id TEXT PRIMARY KEY, title TEXT, content TEXT, createdAt TEXT);",
+            ita: "CREATE TABLE IF NOT EXISTS ita (id TEXT PRIMARY KEY, year INTEGER, title TEXT, pdfFile TEXT, createdAt TEXT);",
+            users: "CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, passwordHash TEXT, createdAt TEXT);"
+        };
+
+        db.run(tables.news);
+        db.run(tables.ita);
+        db.run(tables.users);
+
+        // Seed initial admin user if no users exist
+        const userCountResult = db.exec("SELECT COUNT(*) FROM users");
+        if (userCountResult[0].values[0][0] === 0) {
+            const initialPassword = 'chopkeeper';
+            const passwordHash = await sha256(initialPassword);
+            db.run("INSERT INTO users VALUES (:id, :passwordHash, :createdAt)", {
+                ':id': 'admin',
+                ':passwordHash': passwordHash,
+                ':createdAt': new Date().toISOString()
+            });
         }
         
         await persistDb();
@@ -191,5 +213,50 @@ export const updateItaItem = async (id: string, year: number, title: string, pdf
 export const deleteItaItem = async (id: string): Promise<void> => {
     const db = await getDb();
     db.run("DELETE FROM ita WHERE id = :id", { ':id': id });
+    await persistDb();
+};
+
+// User Functions
+export const verifyUser = async (id: string, password_raw: string): Promise<boolean> => {
+    const db = await getDb();
+    const stmt = db.prepare("SELECT passwordHash FROM users WHERE id = :id");
+    stmt.bind({ ':id': id });
+    
+    if (stmt.step()) {
+        const { passwordHash } = stmt.getAsObject() as { passwordHash: string };
+        stmt.free();
+        const inputHash = await sha256(password_raw);
+        return inputHash === passwordHash;
+    }
+    stmt.free();
+    return false;
+};
+
+export const getUsers = async (): Promise<Pick<User, 'id' | 'createdAt'>[]> => {
+    const db = await getDb();
+    const stmt = db.prepare("SELECT id, createdAt FROM users ORDER BY createdAt ASC");
+    const users: Pick<User, 'id' | 'createdAt'>[] = [];
+    while (stmt.step()) {
+        const row = stmt.getAsObject();
+        users.push(row as Pick<User, 'id' | 'createdAt'>);
+    }
+    stmt.free();
+    return users;
+};
+
+export const addUser = async (id: string, password_raw: string): Promise<void> => {
+    const db = await getDb();
+    const passwordHash = await sha256(password_raw);
+    db.run("INSERT INTO users (id, passwordHash, createdAt) VALUES (:id, :passwordHash, :createdAt)", {
+        ':id': id,
+        ':passwordHash': passwordHash,
+        ':createdAt': new Date().toISOString()
+    });
+    await persistDb();
+};
+
+export const deleteUser = async (id: string): Promise<void> => {
+    const db = await getDb();
+    db.run("DELETE FROM users WHERE id = :id", { ':id': id });
     await persistDb();
 };

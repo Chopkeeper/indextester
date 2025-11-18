@@ -15,10 +15,13 @@ import ServicesPage from './components/ServicesPage';
 import ContactPage from './components/ContactPage';
 import GenericPage from './components/GenericPage';
 import ItaPage from './components/ItaPage';
+import LoginPage from './components/LoginPage';
+import { useAuth } from './components/AuthContext';
 
 const App: React.FC = () => {
   const getRoute = () => window.location.hash || '#home';
   const [route, setRoute] = useState(getRoute());
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -35,7 +38,7 @@ const App: React.FC = () => {
   const renderPage = () => {
     switch (route) {
       case '#admin':
-        return <Admin />;
+        return currentUser ? <Admin /> : <LoginPage />;
       case '#about':
         return <AboutPage />;
       case '#services':
@@ -61,17 +64,15 @@ const App: React.FC = () => {
         );
     }
   };
-
-  if (route === '#admin') {
-    return <Admin />;
-  }
+  
+  const isAuthRoute = route === '#admin';
 
   return (
-    <div className="bg-white font-sans">
-      <NewsTicker />
-      <Header />
+    <div className={`bg-white font-sans ${isAuthRoute ? 'bg-gray-100' : ''}`}>
+      {!isAuthRoute && <NewsTicker />}
+      {!isAuthRoute && <Header />}
       {renderPage()}
-      <Footer />
+      {!isAuthRoute && <Footer />}
     </div>
   );
 };
