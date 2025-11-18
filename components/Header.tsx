@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { LocationIcon, ClockIcon, PhoneIcon, MailIcon } from './Icons';
 
@@ -46,6 +45,7 @@ const Header: React.FC = () => {
                         <a href="#home" className="hover:text-brand-blue">HOME</a>
                         <a href="#about" className="hover:text-brand-blue">ABOUT</a>
                         <a href="#services" className="hover:text-brand-blue">SERVICE</a>
+                        <a href="#ita" className="hover:text-brand-blue">ITA</a>
                         <a href="#pages" className="hover:text-brand-blue">PAGES</a>
                         <a href="#contact" className="hover:text-brand-blue">CONTACT</a>
                     </div>
@@ -64,6 +64,7 @@ const Header: React.FC = () => {
                         <a href="#home" className="block py-2 px-4 text-sm text-brand-blue-dark hover:bg-gray-100">HOME</a>
                         <a href="#about" className="block py-2 px-4 text-sm text-brand-blue-dark hover:bg-gray-100">ABOUT</a>
                         <a href="#services" className="block py-2 px-4 text-sm text-brand-blue-dark hover:bg-gray-100">SERVICE</a>
+                        <a href="#ita" className="block py-2 px-4 text-sm text-brand-blue-dark hover:bg-gray-100">ITA</a>
                         <a href="#pages" className="block py-2 px-4 text-sm text-brand-blue-dark hover:bg-gray-100">PAGES</a>
                         <a href="#contact" className="block py-2 px-4 text-sm text-brand-blue-dark hover:bg-gray-100">CONTACT</a>
                         <a href="#contact" className="block py-2 px-4 text-sm text-white bg-brand-blue text-center rounded-md m-2">Appointment</a>

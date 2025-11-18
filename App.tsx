@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -15,6 +14,7 @@ import AboutPage from './components/AboutPage';
 import ServicesPage from './components/ServicesPage';
 import ContactPage from './components/ContactPage';
 import GenericPage from './components/GenericPage';
+import ItaPage from './components/ItaPage';
 
 const App: React.FC = () => {
   const getRoute = () => window.location.hash || '#home';
@@ -44,6 +44,8 @@ const App: React.FC = () => {
         return <GenericPage />;
       case '#contact':
         return <ContactPage />;
+      case '#ita':
+        return <ItaPage />;
       case '#home':
       default:
         return (

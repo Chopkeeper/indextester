@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { LocationIcon, PhoneIcon, MailIcon } from './Icons';
 
@@ -45,7 +44,7 @@ const Footer: React.FC = () => {
                             <li><a href="#about" className="hover:text-white">> About Us</a></li>
                             <li><a href="#contact" className="hover:text-white">> Contact Us</a></li>
                             <li><a href="#services" className="hover:text-white">> Our Services</a></li>
-                            <li><a href="#" className="hover:text-white">> Terms & Condition</a></li>
+                            <li><a href="#ita" className="hover:text-white">> ITA</a></li>
                             <li><a href="#" className="hover:text-white">> Support</a></li>
                             <li><a href="#admin" className="hover:text-white">> Admin Panel</a></li>
                         </ul>
