@@ -1,25 +1,38 @@
-import React, { useState, useEffect, FormEvent, useCallback } from 'react';
-import { PlusIcon, SaveIcon, PencilIcon, TrashIcon, ArrowLeftIcon, NewspaperIcon, LogoutIcon, SearchIcon } from './Icons';
-import { NewsArticle, getArticles, addArticle, updateArticle, deleteArticle } from '../services/db';
+import React, { useState, useEffect, FormEvent, useCallback, ChangeEvent } from 'react';
+import { PlusIcon, SaveIcon, PencilIcon, TrashIcon, ArrowLeftIcon, NewspaperIcon, LogoutIcon, SearchIcon, UploadIcon } from './Icons';
+import { DbNewsArticle, getNews, addNews, updateNews, deleteNews } from '../services/db';
 import AdminIta from './AdminIta';
 import AdminUsers from './AdminUsers';
 import { useAuth } from './AuthContext';
 
+const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = error => reject(error);
+    });
+};
+
 const AdminNews: React.FC = () => {
-    const [articles, setArticles] = useState<NewsArticle[]>([]);
+    const [articles, setArticles] = useState<DbNewsArticle[]>([]);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
 
     const fetchArticles = useCallback(async () => {
         setIsLoading(true);
         try {
-            const fetchedArticles = await getArticles();
+            const fetchedArticles = await getNews();
             setArticles(fetchedArticles);
         } catch (error) {
             console.error("Failed to load news from database", error);
+            alert('Failed to load news from the local database.');
         } finally {
             setIsLoading(false);
         }
@@ -28,7 +41,34 @@ const AdminNews: React.FC = () => {
     useEffect(() => {
         fetchArticles();
     }, [fetchArticles]);
+    
+    const resetForm = () => {
+        setTitle('');
+        setContent('');
+        setEditingId(null);
+        setImageFile(null);
+        setImagePreview(null);
+        setCurrentImageUrl(null);
+    }
 
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setImageFile(file);
+            setCurrentImageUrl(null); // New file overrides old one
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const removeImage = () => {
+        setImageFile(null);
+        setImagePreview(null);
+        setCurrentImageUrl(null);
+    };
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -37,42 +77,53 @@ const AdminNews: React.FC = () => {
             return;
         }
 
-        if (editingId) {
-            await updateArticle(editingId, title, content);
-        } else {
-            await addArticle(title, content);
-        }
+        try {
+            let imageBase64: string | null = null;
+            if (imageFile) {
+                imageBase64 = await fileToBase64(imageFile);
+            }
 
-        setTitle('');
-        setContent('');
-        setEditingId(null);
-        await fetchArticles();
+            if (editingId) {
+                const finalImage = imageFile ? imageBase64 : currentImageUrl;
+                await updateNews(editingId, title, content, finalImage);
+            } else {
+                await addNews(title, content, imageBase64);
+            }
+    
+            resetForm();
+            await fetchArticles();
+        } catch(error) {
+            console.error("Failed to save article:", error);
+            alert("Failed to save article. Please check the console for details.");
+        }
     };
 
-    const handleEdit = (article: NewsArticle) => {
+    const handleEdit = (article: DbNewsArticle) => {
         setEditingId(article.id);
         setTitle(article.title);
         setContent(article.content);
+        setImageFile(null);
+        setImagePreview(null);
+        setCurrentImageUrl(article.image_base64 || null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleDelete = async (id: string) => {
         if (window.confirm('Are you sure you want to delete this news article?')) {
-            await deleteArticle(id);
-            await fetchArticles();
+            try {
+                await deleteNews(id);
+                await fetchArticles();
+            } catch(error) {
+                 console.error("Failed to delete article:", error);
+                 alert("Failed to delete article. Please check the console for details.");
+            }
         }
     };
-
-    const cancelEdit = () => {
-        setEditingId(null);
-        setTitle('');
-        setContent('');
-    }
 
     const filteredArticles = articles.filter(
         article =>
             article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            article.content.toLowerCase().includes(searchTerm.toLowerCase())
+            (article.content && article.content.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     return (
@@ -103,13 +154,33 @@ const AdminNews: React.FC = () => {
                                 required
                             ></textarea>
                         </div>
+
+                        <div>
+                             <label className="block text-sm font-medium text-gray-600">Image</label>
+                             <div className="mt-2">
+                                {(imagePreview || currentImageUrl) && (
+                                    <div className="mb-4 relative">
+                                        <img src={imagePreview || currentImageUrl || ''} alt="Preview" className="w-full h-40 object-cover rounded-lg" />
+                                        <button type="button" onClick={removeImage} className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition">
+                                            <TrashIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                )}
+                                <label className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center space-x-2 cursor-pointer hover:bg-gray-50">
+                                    <UploadIcon className="w-5 h-5 text-gray-500" />
+                                    <span className="text-gray-600 truncate">{imageFile ? imageFile.name : 'Choose an image...'}</span>
+                                    <input type="file" id="imageFile" accept="image/*" onChange={handleFileChange} className="hidden" />
+                                </label>
+                            </div>
+                        </div>
+
                         <div className="space-y-3 pt-2">
                             <button type="submit" className="w-full bg-brand-blue text-white font-bold py-3 px-6 rounded-lg hover:bg-opacity-90 transition duration-300 flex items-center justify-center space-x-2">
                                 {editingId ? <SaveIcon className="w-5 h-5" /> : <PlusIcon className="w-5 h-5" />}
                                 <span>{editingId ? 'Update Article' : 'Add Article'}</span>
                             </button>
                             {editingId && (
-                                <button type="button" onClick={cancelEdit} className="w-full bg-gray-200 text-gray-700 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition duration-300 text-center">
+                                <button type="button" onClick={resetForm} className="w-full bg-gray-200 text-gray-700 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition duration-300 text-center">
                                     Cancel Edit
                                 </button>
                             )}
@@ -143,12 +214,17 @@ const AdminNews: React.FC = () => {
                                 {filteredArticles.map(article => (
                                     <div key={article.id} className="border border-gray-200 rounded-lg p-4 transition duration-300 hover:shadow-md hover:border-brand-blue">
                                         <div className="flex justify-between items-start">
-                                            <div>
-                                                <h3 className="font-bold text-lg text-brand-blue-dark">{article.title}</h3>
-                                                <p className="text-brand-secondary my-2 text-sm">{article.content}</p>
-                                                <p className="text-xs text-gray-400">
-                                                    {new Date(article.createdAt).toLocaleString()}
-                                                </p>
+                                            <div className="flex items-start flex-grow">
+                                                {article.image_base64 && (
+                                                    <img src={article.image_base64} alt={article.title} className="w-24 h-24 sm:w-32 sm:h-20 object-cover rounded-md mr-4 flex-shrink-0" />
+                                                )}
+                                                <div className="flex-grow">
+                                                    <h3 className="font-bold text-lg text-brand-blue-dark">{article.title}</h3>
+                                                    <p className="text-brand-secondary my-2 text-sm hidden sm:block">{article.content.length > 100 ? article.content.slice(0, 100) + '...' : article.content}</p>
+                                                    <p className="text-xs text-gray-400">
+                                                        {new Date(article.created_at).toLocaleString()}
+                                                    </p>
+                                                </div>
                                             </div>
                                             <div className="flex space-x-2 flex-shrink-0 ml-4">
                                                 <button onClick={() => handleEdit(article)} className="p-2 text-blue-600 bg-blue-100 rounded-full hover:bg-blue-200 transition" aria-label="Edit article">

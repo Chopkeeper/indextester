@@ -17,6 +17,7 @@ import GenericPage from './components/GenericPage';
 import ItaPage from './components/ItaPage';
 import LoginPage from './components/LoginPage';
 import { useAuth } from './components/AuthContext';
+import NewsSection from './components/NewsSection';
 
 const App: React.FC = () => {
   const getRoute = () => window.location.hash || '#home';
@@ -59,6 +60,7 @@ const App: React.FC = () => {
             <WhyChooseUs />
             <Doctors />
             <Appointment />
+            <NewsSection />
             <Testimonial />
           </main>
         );

@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { getArticles, NewsArticle } from '../services/db';
+import { getNews, DbNewsArticle } from '../services/db';
 
 const NewsTicker: React.FC = () => {
-  const [latestNews, setLatestNews] = useState<NewsArticle | null>(null);
+  const [latestNews, setLatestNews] = useState<DbNewsArticle | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     const fetchLatestNews = async () => {
       try {
-        const articles = await getArticles();
+        const articles = await getNews(1); // Fetch only the latest article
         if (articles.length > 0) {
           const latest = articles[0];
           setLatestNews(latest);
@@ -18,7 +18,7 @@ const NewsTicker: React.FC = () => {
           }
         }
       } catch (error) {
-        console.error("Failed to fetch news for ticker", error);
+        console.error("Failed to fetch news for ticker from db", error);
       }
     };
 
@@ -35,12 +35,16 @@ const NewsTicker: React.FC = () => {
   if (!isVisible || !latestNews) {
     return null;
   }
+  
+  const truncatedContent = latestNews.content.length > 150 
+    ? latestNews.content.slice(0, 150) + '...' 
+    : latestNews.content;
 
   return (
     <div className="bg-brand-blue-dark text-white p-2 text-center text-sm relative">
       <p>
         <span className="font-bold mr-2">{latestNews.title}:</span>
-        {latestNews.content}
+        {truncatedContent}
       </p>
       <button
         onClick={handleDismiss}

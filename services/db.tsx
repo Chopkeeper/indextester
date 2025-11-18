@@ -1,8 +1,9 @@
-export interface NewsArticle {
+export interface DbNewsArticle {
   id: string;
   title: string;
   content: string;
-  createdAt: string;
+  created_at: string;
+  image_base64?: string | null;
 }
 
 export interface ItaItem {
@@ -75,7 +76,7 @@ const initializeDb = async () => {
 
         // Table Creation
         const tables = {
-            news: "CREATE TABLE IF NOT EXISTS news (id TEXT PRIMARY KEY, title TEXT, content TEXT, createdAt TEXT);",
+            news: "CREATE TABLE IF NOT EXISTS news (id TEXT PRIMARY KEY, title TEXT, content TEXT, image_base64 TEXT, created_at TEXT);",
             ita: "CREATE TABLE IF NOT EXISTS ita (id TEXT PRIMARY KEY, year INTEGER, title TEXT, pdfFile TEXT, createdAt TEXT);",
             users: "CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, passwordHash TEXT, createdAt TEXT);"
         };
@@ -121,51 +122,60 @@ const persistDb = async () => {
     localStorage.setItem(DB_KEY, base64Data);
 };
 
+
 // News Functions
-export const getArticles = async (): Promise<NewsArticle[]> => {
+export const getNews = async (limit?: number): Promise<DbNewsArticle[]> => {
     const db = await getDb();
-    const stmt = db.prepare("SELECT * FROM news ORDER BY createdAt DESC");
-    const articles: NewsArticle[] = [];
+    let sql = "SELECT * FROM news ORDER BY created_at DESC";
+    if (limit) {
+        sql += ` LIMIT ${limit}`;
+    }
+    const stmt = db.prepare(sql);
+    const articles: DbNewsArticle[] = [];
     while (stmt.step()) {
         const row = stmt.getAsObject();
-        articles.push(row as NewsArticle);
+        articles.push(row as DbNewsArticle);
     }
     stmt.free();
     return articles;
 };
 
-export const addArticle = async (title: string, content: string): Promise<void> => {
+export const addNews = async (title: string, content: string, image_base64: string | null): Promise<void> => {
     const db = await getDb();
-    const newArticle = {
+    const newItem = {
         id: Date.now().toString(),
         title,
         content,
-        createdAt: new Date().toISOString()
+        image_base64,
+        created_at: new Date().toISOString()
     };
-    db.run("INSERT INTO news VALUES (:id, :title, :content, :createdAt)", {
-        ':id': newArticle.id,
-        ':title': newArticle.title,
-        ':content': newArticle.content,
-        ':createdAt': newArticle.createdAt
+    db.run("INSERT INTO news (id, title, content, image_base64, created_at) VALUES (:id, :title, :content, :image_base64, :created_at)", {
+        ':id': newItem.id,
+        ':title': newItem.title,
+        ':content': newItem.content,
+        ':image_base64': newItem.image_base64,
+        ':created_at': newItem.created_at
     });
     await persistDb();
 };
 
-export const updateArticle = async (id: string, title: string, content: string): Promise<void> => {
+export const updateNews = async (id: string, title: string, content: string, image_base64: string | null): Promise<void> => {
     const db = await getDb();
-    db.run("UPDATE news SET title = :title, content = :content WHERE id = :id", {
+    db.run("UPDATE news SET title = :title, content = :content, image_base64 = :image_base64 WHERE id = :id", {
         ':id': id,
         ':title': title,
-        ':content': content
+        ':content': content,
+        ':image_base64': image_base64
     });
     await persistDb();
 };
 
-export const deleteArticle = async (id: string): Promise<void> => {
+export const deleteNews = async (id: string): Promise<void> => {
     const db = await getDb();
     db.run("DELETE FROM news WHERE id = :id", { ':id': id });
     await persistDb();
 };
+
 
 // ITA Functions
 export const getItaItems = async (): Promise<ItaItem[]> => {
